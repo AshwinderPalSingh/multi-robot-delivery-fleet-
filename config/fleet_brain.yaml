@@ -1,0 +1,162 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  GForce Central Brain — fleet configuration
+#
+#  This is the ONLY place fleet behaviour is defined. Rovers carry no
+#  configuration of their own: on hardware an ESP32 boots knowing nothing but
+#  its own ID and the brain's address, and receives everything else at
+#  runtime. Retuning the fleet means editing this file on the Raspberry Pi
+#  and restarting one node.
+# ═══════════════════════════════════════════════════════════════════════════
+
+fleet_brain:
+  ros__parameters:
+    use_sim_time: true
+
+    rovers: ['rover1', 'rover2', 'rover3', 'rover4']
+
+    # ── Motion model ──────────────────────────────────────────────────────
+    # Effective, not peak. Nav2 is capped at 0.5 m/s and 1.5 rad/s, but a
+    # real leg spends a good fraction of its time accelerating, decelerating
+    # and recovering, so the brain predicts with derated figures. These are
+    # what convert metres and radians into the seconds every factor is
+    # expressed in.
+    cruise_speed: 0.35          # m/s
+    turn_rate: 1.00             # rad/s
+
+    # ── Scoring weights ───────────────────────────────────────────────────
+    # Every factor resolves to EFFECTIVE SECONDS, so the weights carry units
+    # and the total is a physically meaningful predicted mission cost.
+    w1_path: 1.0                # s per s      — true traversal time
+    w2_turn: 1.0                # s per s      — rotation burden
+    w3_contention: 1.5          # s per s      — forecast conflict delay
+    w4_energy: 60.0             # s per unit   — energy-margin penalty
+    w5_reliability: 45.0        # s per nat    — trust penalty
+    w6_localization: 30.0       # s per metre  — pose uncertainty penalty
+    w7_coverage: 0.25           # s per s      — fleet readiness opportunity cost
+
+    # ── Hard vetoes ───────────────────────────────────────────────────────
+    veto_link_stale_s: 3.0      # no telemetry this long → rover is not a candidate
+    veto_pose_sigma: 1.20       # m; above this the rover does not know where it is
+    # Kidnapped-robot recovery. A rover vetoed on pose uncertainty this long
+    # gets its AMCL particles scattered over the whole map and then rotates in
+    # place so the filter has motion to resample on. Rotation, not driving:
+    # by definition nobody knows where the rover is, and a rotation cannot
+    # collide with anything.
+    reloc_after_s: 20.0
+    # Recovery drives a slow ARC, not a spin on the spot. Turning in place
+    # never changes the viewpoint, so every particle keeps seeing the scan it
+    # already matched and the filter has nothing to eliminate -- measured: a
+    # 14 s in-place spin left sigma at 8.4 m. Translation is what kills wrong
+    # hypotheses. The arc is gated on the rover's own forward lidar sector.
+    reloc_spin_s: 22.0
+    reloc_spin_rate: 0.6        # rad/s
+    reloc_creep_v: 0.12         # m/s
+    reloc_min_clear_m: 1.30     # forward room needed before creeping
+    lost_pose_sigma: 3.0        # above this the estimate is worthless: scatter it.
+                                # below, the filter is only loose and scattering
+                                # destroys a usable pose -- give it motion instead.
+    max_reloc_attempts: 3       # then stop and ask for a human
+    energy_reserve_frac: 0.20   # never plan into the last 20% of the pack
+    max_task_attempts: 2
+    reassign_cooldown_s: 25.0
+
+    # ── Energy model (see docs/HARDWARE.md) ───────────────────────────────
+    # Calibrated per platform by driving a known loop and logging pack Wh.
+    # Figures are for the ~300 kg platform in urdf/robot.urdf.xacro: roughly
+    # 150 W of drive power at the 0.35 m/s cruise, which is 0.12 Wh per metre.
+    energy_wh_per_m: 0.12       # translation
+    energy_wh_per_rad: 0.05     # in-place rotation, per radian of yaw
+    energy_idle_w: 15.0         # electronics + Pi link + lidar, always on
+    energy_wh_per_kg_m: 0.0006  # payload surcharge
+
+    # A real 480 Wh pack lasts a full shift, so an energy factor tuned to it
+    # would never move during a demo. rover_link drains the simulated pack
+    # this many times faster so F4 is exercised in a few minutes. Physics and
+    # the brain's own model stay honest; only the sim drain rate is scaled.
+    sim_drain_multiplier: 12.0
+
+    # ── Reliability prior ─────────────────────────────────────────────────
+    # Beta(alpha, beta) posterior on "this rover completes what it is given".
+    # Seeded optimistic-but-not-certain; decays so ancient history stops
+    # dominating a rover that has since been repaired.
+    reliability_alpha0: 6.0
+    reliability_beta0: 1.0
+    reliability_decay: 0.98     # applied to both counts on every update
+
+    # ── Contention forecast ───────────────────────────────────────────────
+    contention_horizon_s: 60.0  # how far ahead committed paths are projected
+    contention_cell_m: 0.50     # spatial bucket for path overlap
+    contention_time_bucket_s: 5.0
+    pinch_width_m: 1.90         # two 0.87 m rovers + clearance cannot both pass
+                                # a corridor narrower than this
+
+    # Resample spacing before path headings are measured. Smaller than this
+    # and F2 starts charging rovers for the planner's grid staircase instead
+    # of for rotation they will actually perform.
+    turn_sample_m: 0.75
+    turn_window: 2             # headings taken across 2 samples, not adjacent ones
+
+    # ── Control loop ──────────────────────────────────────────────────────
+    decision_period_s: 1.0
+    telemetry_timeout_s: 5.0
+
+    # ── Map (for corridor-width analysis) ─────────────────────────────────
+    map_yaml: 'hospital_large.yaml'
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Stations
+#
+#  demand is the prior probability weight that the NEXT request lands here.
+#  It is what factor F7 integrates over when it asks "if I commit this rover,
+#  how much slower does the fleet answer whatever comes next?" Set it from
+#  observed call volume; these values are a plausible ward profile.
+# ═══════════════════════════════════════════════════════════════════════════
+fleet_stations:
+  ros__parameters:
+    names: ['nurses_station', 'ward_a_bed', 'ward_b_bed', 'pharmacy',
+            'supply_room', 'surgical_prep', 'east_hall', 'south_hall',
+            'reception']
+    nurses_station: [1.50,  3.00,  1.5708, 1.00]   # x, y, yaw, demand
+    ward_a_bed:     [-1.50, 13.00, 1.5708, 0.90]
+    ward_b_bed:     [9.00,  13.00, 1.5708, 0.90]
+    pharmacy:       [-12.00, 0.00, 0.0000, 0.80]
+    supply_room:    [-12.00, 13.50, 1.5708, 0.70]
+    surgical_prep:  [13.50, -4.60, -1.5708, 1.00]
+    east_hall:      [15.50, -1.20, 0.0000, 0.30]
+    south_hall:     [-3.00, -6.00, 0.0000, 0.30]
+    reception:      [-9.50, 10.00, 0.0000, 0.50]
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Rover hardware profiles
+#
+#  battery_wh differs per rover on purpose: these are the same pack chemistry
+#  at different ages, which is what a real fleet looks like after a year. It
+#  makes factor F4 do visible work — rover4 is genuinely a worse choice for a
+#  long haul than rover1 even when it is closer.
+# ═══════════════════════════════════════════════════════════════════════════
+fleet_rovers:
+  ros__parameters:
+    rover1:
+      dock: 'dock_alpha'
+      dock_pose: [-13.00, -7.50, 0.0]
+      battery_wh: 480.0
+      esp_endpoint: '192.168.4.11:9001'
+      mac: 'A0:B7:65:11:11:11'
+    rover2:
+      dock: 'dock_bravo'
+      dock_pose: [15.50, 2.00, 3.1416]
+      battery_wh: 455.0
+      esp_endpoint: '192.168.4.12:9001'
+      mac: 'A0:B7:65:22:22:22'
+    rover3:
+      dock: 'dock_charlie'
+      dock_pose: [-13.00, 7.50, 0.0]
+      battery_wh: 430.0
+      esp_endpoint: '192.168.4.13:9001'
+      mac: 'A0:B7:65:33:33:33'
+    rover4:
+      dock: 'dock_delta'
+      dock_pose: [12.00, 7.50, 3.1416]
+      battery_wh: 400.0
+      esp_endpoint: '192.168.4.14:9001'
+      mac: 'A0:B7:65:44:44:44'

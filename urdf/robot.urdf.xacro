@@ -1,0 +1,750 @@
+<?xml version="1.0"?>
+<robot name="hospital_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ==================== ROBOT NAME PARAMETER ==================== -->
+  <!-- Pass robot_name:=rover1 or robot_name:=rover2 when spawning -->
+  <xacro:arg name="robot_name" default="hospital_robot"/>
+  <xacro:property name="robot_ns" value="$(arg robot_name)"/>
+
+ 
+  <!-- ==================== MATERIALS ==================== -->
+  <material name="grey">      <color rgba="0.55 0.55 0.55 1.0"/></material>
+  <material name="dark_grey"> <color rgba="0.30 0.30 0.30 1.0"/></material>
+  <material name="black">     <color rgba="0.10 0.10 0.10 1.0"/></material>
+  <material name="blue">      <color rgba="0.00 0.00 0.80 1.0"/></material>
+  <material name="white">     <color rgba="0.90 0.90 0.90 1.0"/></material>
+  <material name="silver">    <color rgba="0.75 0.75 0.75 1.0"/></material>
+
+  <!-- ==================== CHASSIS (base_link) ==================== -->
+  <!-- Linear ×0.6: collision origin z=0.168, box 0.900×0.870×0.336 -->
+  <!-- Mass ×0.216: 1250×0.216=270.0                                 -->
+  <!-- Inertia ×0.07776: ixx=266.875×0.07776=20.749, etc.           -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/chassis.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.168" rpy="0 0 0"/>
+      <geometry><box size="0.900 0.870 0.336"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="270.0"/>
+      <origin xyz="0 0 0.168"/>
+      <inertia ixx="20.749"  ixy="0" ixz="0"
+               iyy="18.745"  iyz="0"
+               izz="35.438"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== PAYLOAD BOX ==================== -->
+  <!-- Linear ×0.6: joint+collision origin z=0.420, box 0.600×0.450×0.240 -->
+  <!-- Mass ×0.216: 125×0.216=27.0                                          -->
+  <!-- Inertia ×0.07776: 15.625×0.07776=1.215                               -->
+  <link name="payload_box">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/payload_box.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.420" rpy="0 0 0"/>
+      <geometry><box size="0.600 0.450 0.240"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="27.0"/>
+      <origin xyz="0 0 0.420"/>
+      <inertia ixx="1.215" ixy="0" ixz="0"
+               iyy="1.215" iyz="0"
+               izz="1.215"/>
+    </inertial>
+  </link>
+  <joint name="payload_box_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="payload_box"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================== LIDAR MOUNT ==================== -->
+  <!-- Linear ×0.6: collision origin (0.360, 0, 0.435), cyl r=0.072 l=0.330 -->
+  <!-- Mass ×0.216: 25×0.216=5.4                                              -->
+  <!-- Inertia ×0.07776: 0.3125×0.07776=0.02430                               -->
+  <link name="lidar_mount">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/lidar_mount.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.360 0 0.435" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.072" length="0.330"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="5.4"/>
+      <origin xyz="0.360 0 0.435"/>
+      <inertia ixx="0.02430" ixy="0" ixz="0"
+               iyy="0.02430" iyz="0"
+               izz="0.02430"/>
+    </inertial>
+  </link>
+  <joint name="lidar_mount_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_mount"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================== LEFT DRIVE WHEEL ==================== -->
+  <!-- Joint ×0.6: (-0.276, +0.360, 0)                            -->
+  <!-- Visual offset = -(joint xyz) = (0.276, -0.360, 0)           -->
+  <!-- Collision: cyl r=0.150 l=0.120                               -->
+  <!-- Mass ×0.216: 62.5×0.216=13.5                                 -->
+  <!-- Inertia ×0.07776: ixx=0.9375×0.07776=0.07290, izz=1.875×0.07776=0.14580 -->
+  <link name="left_wheel">
+    <visual>
+      <origin xyz="0.276 -0.360 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/wheel_left.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.150" length="0.120"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="13.5"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.07290" ixy="0" ixz="0"
+               iyy="0.07290" iyz="0"
+               izz="0.14580"/>
+    </inertial>
+  </link>
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <origin xyz="-0.276 0.360 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <!-- Damping stops the idle creep that caused odom drift and AMCL teleporting.
+         Without it the 270 kg chassis drifts at ~1.5 mm/s, accumulating >1 m of
+         odom error in under 10 minutes. Value must be low enough that the
+         diff_drive torque (80 Nm) can still accelerate normally. -->
+    <dynamics damping="5.0" friction="2.0"/>
+  </joint>
+
+  <!-- ==================== RIGHT DRIVE WHEEL ==================== -->
+  <!-- Joint ×0.6: (-0.276, -0.360, 0)                             -->
+  <!-- Visual offset = -(joint xyz) = (0.276, +0.360, 0)            -->
+  <link name="right_wheel">
+    <visual>
+      <origin xyz="0.276 0.360 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/wheel_right.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.150" length="0.120"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="13.5"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.07290" ixy="0" ixz="0"
+               iyy="0.07290" iyz="0"
+               izz="0.14580"/>
+    </inertial>
+  </link>
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin xyz="-0.276 -0.360 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="5.0" friction="2.0"/>
+  </joint>
+
+
+ 
+
+  <!--- CASTER 1 : SWIVEL LINK (top-fork assembly)
+    Swivel joint in base_link : xyz = (0.390, -0.195, 0.030)   [×0.6 of (0.650,-0.325,0.050)]
+    Visual offset             : -(0.390, -0.195, 0.030) = (-0.390, +0.195, -0.030)
+  -->
+  <link name="front_caster_1_swivel">
+
+    <visual>                                        <!-- Top fork 1 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_topfork1.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Top fork 2 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_topfork2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Shaft -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_shaft.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bash plate 2 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_bash2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bash plate 3 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_bash3.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bearing 1 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_bearing1.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bearing 2 -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_bearing2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Snap ring -->
+      <origin xyz="-0.390 0.195 -0.030" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_snapring.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <!-- Collision: cyl r=0.045 l=0.090, origin z=-0.075  [×0.6] -->
+    <collision>
+      <origin xyz="0 0 -0.075" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.045" length="0.090"/></geometry>
+    </collision>
+    <!-- Mass ×0.216: 6.25×0.216=1.350  Inertia ×0.07776: 0.046875×0.07776=0.003645 -->
+    <inertial>
+      <mass value="1.350"/>
+      <origin xyz="0 0 -0.075"/>
+      <inertia ixx="0.003645" ixy="0" ixz="0"
+               iyy="0.003645" iyz="0"
+               izz="0.003645"/>
+    </inertial>
+  </link>
+
+  <!-- CASTER 1 SWIVEL JOINT — steers around Z axis -->
+  <joint name="front_caster_1_swivel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_caster_1_swivel"/>
+    <origin xyz="0.390 -0.195 0.030" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.5"/>
+  </joint>
+
+
+  <!-- - CASTER 1 : WHEEL LINK (lower fork + rolling wheel)
+    Wheel joint in swivel   : xyz = (0, 0, -0.150)   [×0.6 of -0.250]
+    Visual offset in wheel  :
+      = -(0.390, -0.195, 0.030) - (0, 0, -0.150)
+      = (-0.390, +0.195, +0.120)
+    Collision sphere r=0.120  [×0.6 of 0.200]
+  -->
+  <link name="front_caster_1_wheel">
+
+    <visual>                                        <!-- Fork -->
+      <origin xyz="-0.390 0.195 0.120" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_fork.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Wheel -->
+      <origin xyz="-0.390 0.195 0.120" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster1_wheel.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <!-- Collision origin raised +0.090 so the caster contacts the floor at
+         the same height as the drive wheels.
+         This link sits at base_link z = 0.030 (swivel) - 0.150 (wheel) =
+         -0.120. With the sphere centred on the link origin its bottom was
+         at -0.240, i.e. 90 mm BELOW the drive-wheel contact of -0.150, so
+         the rover balanced on its casters with the drive wheels in the
+         air. Centre is now -0.030 -> bottom -0.150, level with the drive
+         wheels. Visual meshes are deliberately left untouched. -->
+    <collision>
+      <origin xyz="0 0 0.090" rpy="0 0 0"/>
+      <geometry><sphere radius="0.120"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="1.350"/>
+      <origin xyz="0 0 0.090"/>
+      <inertia ixx="0.003645" ixy="0" ixz="0"
+               iyy="0.003645" iyz="0"
+               izz="0.003645"/>
+    </inertial>
+  </link>
+
+  <!-- CASTER 1 WHEEL JOINT — rolls around Y axis -->
+  <joint name="front_caster_1_wheel_joint" type="continuous">
+    <parent link="front_caster_1_swivel"/>
+    <child link="front_caster_1_wheel"/>
+    <origin xyz="0 0 -0.150" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.5" friction="0.3"/>
+  </joint>
+
+
+  <!-- ╔══════════════════════════════════════════════════════════════╗
+       ║       FRONT CASTER 3  (left-front)  — STEERABLE             ║
+       ╚══════════════════════════════════════════════════════════════╝ -->
+
+  <!--- CASTER 3 : SWIVEL LINK (top-fork assembly)
+    Swivel joint in base_link : xyz = (0.390, +0.195, 0.105)   [×0.6 of (0.650,+0.325,0.175)]
+    Visual offset             : -(0.390, +0.195, 0.105) = (-0.390, -0.195, -0.105)
+  -->
+  <link name="front_caster_3_swivel">
+
+    <visual>                                        <!-- Top fork 1 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_topfork1.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Top fork 2 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_topfork2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Shaft -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_shaft.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bash plate 2 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_bash2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bash plate 3 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_bash3.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bearing 1 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_bearing1.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Bearing 2 -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_bearing2.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <visual>                                        <!-- Snap ring -->
+      <origin xyz="-0.390 -0.195 -0.105" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_snapring.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="silver"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 -0.075" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.045" length="0.090"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="1.350"/>
+      <origin xyz="0 0 -0.075"/>
+      <inertia ixx="0.003645" ixy="0" ixz="0"
+               iyy="0.003645" iyz="0"
+               izz="0.003645"/>
+    </inertial>
+  </link>
+
+  <!-- CASTER 3 SWIVEL JOINT — steers around Z axis -->
+  <joint name="front_caster_3_swivel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_caster_3_swivel"/>
+    <origin xyz="0.390 0.195 0.105" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="1.0" friction="0.5"/>
+  </joint>
+
+
+  <!-- - CASTER 3 : WHEEL LINK (lower fork + rolling wheel)
+    Wheel joint in swivel   : xyz = (0, 0, -0.150)   [×0.6 of -0.250]
+    Visual offset in wheel  :
+      = -(0.390, +0.195, 0.105) - (0, 0, -0.150)
+      = (-0.390, -0.195, +0.045)
+  -->
+  <link name="front_caster_3_wheel">
+
+    <visual>                                        <!-- Fork -->
+      <origin xyz="-0.390 -0.195 0.045" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_fork.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+
+    <visual>                                        <!-- Wheel -->
+      <origin xyz="-0.390 -0.195 0.045" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://hospital_robot_description/meshes/caster3_wheel.stl"
+              scale="0.003 0.003 0.003"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+
+    <!-- Collision origin raised +0.015 to match the drive-wheel contact
+         height. This link sits at base_link z = 0.105 (swivel) - 0.150
+         (wheel) = -0.045, so the sphere bottom was -0.165. Note caster 3's
+         swivel was mounted at z=+0.105 while caster 1's was at z=+0.030,
+         so the casters hung at different heights, which is what rolled
+         the rover onto its side. Centre is now -0.030 -> bottom -0.150,
+         matching caster 1 and both drive wheels. -->
+    <collision>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry><sphere radius="0.120"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="1.350"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.003645" ixy="0" ixz="0"
+               iyy="0.003645" iyz="0"
+               izz="0.003645"/>
+    </inertial>
+  </link>
+
+  <!-- CASTER 3 WHEEL JOINT — rolls around Y axis -->
+  <joint name="front_caster_3_wheel_joint" type="continuous">
+    <parent link="front_caster_3_swivel"/>
+    <child link="front_caster_3_wheel"/>
+    <origin xyz="0 0 -0.150" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.5" friction="0.3"/>
+  </joint>
+
+
+  <!-- ==================== LIDAR SENSOR LINK ==================== -->
+  <!-- Cylinder r=0.060 l=0.180  [×0.6]                            -->
+  <!-- Joint origin: x=0.360 z=0.495  [lidar_mount 0.360,0,0.435 + 0.060 above] -->
+  <!-- Mass ×0.216: 12.5×0.216=2.7  Inertia ×0.07776: 0.3125×0.07776=0.02430  -->
+  <!-- <link name="lidar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.060" length="0.180"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.060" length="0.180"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="2.7"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.02430" ixy="0" ixz="0"
+               iyy="0.02430" iyz="0"
+               izz="0.02430"/>
+    </inertial>
+  </link> -->
+  <link name="lidar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.060" length="0.180"/></geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="2.7"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.02430" ixy="0" ixz="0"
+              iyy="0.02430" iyz="0"
+              izz="0.02430"/>
+    </inertial>
+  </link>
+  <joint name="lidar_joint" type="fixed">
+    <parent link="lidar_mount"/>
+    <child link="lidar_link"/>
+    <!-- Sensor height raised 0.495 -> 0.600.
+         At 0.495 the scan plane cut straight through the payload box, whose
+         collision spans z 0.30..0.54 and x -0.30..+0.30 (i.e. directly
+         behind this sensor at x=+0.360). 80 of the 360 rays therefore
+         returned the robot's own cargo box: a rectangular phantom obstacle
+         at 0.35-0.70 m across the whole rear arc (bearings +/-141..180),
+         welded to the robot and moving with it. That poisoned the costmap
+         and, worse, gave AMCL a large block of scan data that can never
+         match the map, which is what drove localisation to diverge by
+         metres and sent the rovers off in random directions.
+         0.600 clears the box top (0.540) by 60 mm. It costs no obstacle
+         visibility: everything under 0.60 in hospital.world (supply boxes
+         0.40, laundry bag / medicine box 0.30, charging dock 0.04) was
+         already below the old 0.495 plane, while the lowest obstacles that
+         were visible (beds and wet-floor sign at 0.70) still are. -->
+    <origin xyz="0.360 0 0.600" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================== IGNITION GAZEBO MATERIALS ==================== -->
+  <gazebo reference="base_link">
+    <visual>
+      <material>
+        <ambient>0.5 0.5 0.5 1</ambient>
+        <diffuse>0.6 0.6 0.6 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+  </gazebo>
+
+  <gazebo reference="payload_box">
+    <visual>
+      <material>
+        <ambient>0.95 0.95 0.95 1</ambient>
+        <diffuse>0.95 0.95 0.95 1</diffuse>
+        <specular>0.05 0.05 0.05 1</specular>
+      </material>
+    </visual>
+  </gazebo>
+
+  <gazebo reference="lidar_mount">
+    <visual>
+      <material>
+        <ambient>0.0 0.3 0.8 1</ambient>
+        <diffuse>0.0 0.3 0.8 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </visual>
+  </gazebo>
+
+  <gazebo reference="lidar_link">
+    <visual>
+      <material>
+        <ambient>0.1 0.1 0.1 1</ambient>
+        <diffuse>0.1 0.1 0.1 1</diffuse>
+        <specular>0.2 0.2 0.2 1</specular>
+      </material>
+    </visual>
+  </gazebo>
+
+  <gazebo reference="left_wheel">
+    <visual>
+      <material>
+        <ambient>0.1 0.1 0.1 1</ambient>
+        <diffuse>0.15 0.15 0.15 1</diffuse>
+        <specular>0.05 0.05 0.05 1</specular>
+      </material>
+    </visual>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
+  </gazebo>
+
+  <gazebo reference="right_wheel">
+    <visual>
+      <material>
+        <ambient>0.1 0.1 0.1 1</ambient>
+        <diffuse>0.15 0.15 0.15 1</diffuse>
+        <specular>0.05 0.05 0.05 1</specular>
+      </material>
+    </visual>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
+  </gazebo>
+
+  <!-- Swivel links: near-zero friction so casters self-align freely -->
+  <gazebo reference="front_caster_1_swivel">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="front_caster_3_swivel">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <!-- Caster wheels: zero friction on ground contact (passive roll) -->
+  <gazebo reference="front_caster_1_wheel">
+    <visual>
+      <material>
+        <ambient>0.2 0.2 0.2 1</ambient>
+        <diffuse>0.25 0.25 0.25 1</diffuse>
+        <specular>0.3 0.3 0.3 1</specular>
+      </material>
+    </visual>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="front_caster_3_wheel">
+    <visual>
+      <material>
+        <ambient>0.2 0.2 0.2 1</ambient>
+        <diffuse>0.25 0.25 0.25 1</diffuse>
+        <specular>0.3 0.3 0.3 1</specular>
+      </material>
+    </visual>
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <!-- ==================== GAZEBO CLASSIC DIFF DRIVE ==================== -->
+  <gazebo>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <ros>
+        <namespace>${robot_ns}</namespace>
+        <!-- The wheels listen on wheel_cmd, NOT cmd_vel. Nav2's cmd_vel goes
+             to rover_link, which is the single point that drives the motors:
+             in simulation it republishes here, on hardware it packs the same
+             velocity pair into the ESP32 downlink frame. Keeping Gazebo off
+             cmd_vel means the sim has exactly one command path, and it is the
+             one that exists on the real rover. -->
+        <remapping>cmd_vel:=wheel_cmd</remapping>
+        <remapping>odom:=odom</remapping>
+      </ros>
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>0.720</wheel_separation>
+      <wheel_diameter>0.300</wheel_diameter>
+      <max_wheel_torque>80.0</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+      <odometry_frame>${robot_ns}/odom</odometry_frame>
+      <robot_base_frame>${robot_ns}/base_link</robot_base_frame>
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+      <update_rate>30.0</update_rate>
+    </plugin>
+  </gazebo>
+
+  <!-- ==================== GAZEBO CLASSIC LIDAR ==================== -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="ray">
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159265</min_angle>
+            <max_angle>3.14159265</max_angle>
+          </horizontal>
+        </scan>
+        <!-- 20 m, not the 12 m this carried in the smaller two-rover ward.
+             The arena grew to 33.2 x 27.2 m and the scanner did not, which
+             left the main hall under-observed: a raycast sweep of the map
+             shows a 12 m scanner returning only 65% of its rays around
+             (-6, 1), against 96% at 20 m. AMCL diverged repeatedly on rovers
+             crossing that stretch. 20 m is an RPLIDAR A3-class sensor. -->
+        <range>
+          <min>0.35</min>
+          <max>20.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="scan" filename="libgazebo_ros_ray_sensor.so">
+        <ros>
+          <namespace>${robot_ns}</namespace>
+          <remapping>~/out:=scan</remapping>
+        </ros>
+        <output_type>sensor_msgs/LaserScan</output_type>
+        <frame_name>${robot_ns}/lidar_link</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== GAZEBO CLASSIC JOINT STATE PUB ==================== -->
+  <gazebo>
+    <plugin name="joint_states" filename="libgazebo_ros_joint_state_publisher.so">
+      <ros>
+        <namespace>${robot_ns}</namespace>
+        <remapping>~/out:=joint_states</remapping>
+      </ros>
+      <update_rate>30</update_rate>
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+      <joint_name>front_caster_1_swivel_joint</joint_name>
+      <joint_name>front_caster_1_wheel_joint</joint_name>
+      <joint_name>front_caster_3_swivel_joint</joint_name>
+      <joint_name>front_caster_3_wheel_joint</joint_name>
+    </plugin>
+  </gazebo>
+
+</robot>
+

@@ -1,0 +1,616 @@
+<?xml version="1.0" ?>
+<!-- Gazebo Classic 11 world.
+     Converted from the original Ignition/Fortress version, which is kept
+     alongside as hospital.world.ignition-backup.
+
+     Classic 11 parses SDF only up to 1.7 and rejected the 1.8 header
+     ("Unable to convert from SDF version 1.8 to 1.7"). It also has no
+     "ignored" physics type -- that is an Ignition convention where the
+     engine is supplied by a system plugin instead ("Invalid Physics
+     Type[ignored]" -> "Unable to create physics engine"). Either error
+     alone aborts world load, which is why gzserver exited at startup.
+
+     Physics, sensors, scene broadcasting and user commands are all built
+     into gzserver, so the ignition-gazebo-*-system plugins have no Classic
+     equivalent and are dropped. The ROS interface plugins
+     (libgazebo_ros_init / _factory / _force_system) are injected by
+     gazebo_ros's own gzserver launch file via -s arguments, so they must
+     not be listed here either. -->
+<sdf version="1.6">
+  <world name="hospital">
+
+    <!-- ===== PHYSICS ===== -->
+    <physics name="default_physics" default="true" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <!-- ===== LIGHTING (Hospital Cool White 6000K) ===== -->
+    <light name="main_light_1" type="directional">
+      <pose>0 0 8 0 0 0</pose>
+      <diffuse>0.95 0.97 1.0 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <direction>0.0 0.0 -1.0</direction>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light name="corridor_light_1" type="point">
+      <pose>0 0 3.8 0 0 0</pose>
+      <diffuse>0.95 0.97 1.0 1</diffuse>
+      <specular>0.05 0.05 0.05 1</specular>
+      <attenuation><range>10</range><linear>0.1</linear><constant>0.5</constant></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light name="corridor_light_2" type="point">
+      <pose>8 0 3.8 0 0 0</pose>
+      <diffuse>0.95 0.97 1.0 1</diffuse>
+      <specular>0.05 0.05 0.05 1</specular>
+      <attenuation><range>10</range><linear>0.1</linear><constant>0.5</constant></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light name="reception_light" type="point">
+      <pose>-8 4 3.8 0 0 0</pose>
+      <diffuse>0.95 0.97 1.0 1</diffuse>
+      <specular>0.05 0.05 0.05 1</specular>
+      <attenuation><range>8</range><linear>0.1</linear><constant>0.5</constant></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- ===== GROUND (Linoleum Floor) ===== -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="col">
+          <geometry><plane><normal>0 0 1</normal><size>60 60</size></plane></geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.8</mu><mu2>0.8</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="vis">
+          <geometry><plane><normal>0 0 1</normal><size>60 60</size></plane></geometry>
+          <material>
+            <ambient>0.88 0.88 0.85 1</ambient>
+            <diffuse>0.88 0.88 0.85 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ================================================================ -->
+    <!--                     HOSPITAL STRUCTURE                            -->
+    <!-- L-SHAPED LAYOUT:                                                  -->
+    <!--  Main corridor runs East-West (y=0, x=-10 to x=12)               -->
+    <!--  Branch corridor runs North (x=-10, y=0 to y=12)                 -->
+    <!--  Reception: top-left                                              -->
+    <!--  Patient Rooms: along top corridor                                -->
+    <!--  Operating Theater: end of east corridor                          -->
+    <!--  Charging Bay: south side                                         -->
+    <!--  Nurses Station: center junction                                  -->
+    <!-- ================================================================ -->
+
+    <!-- ===== OUTER BOUNDARY WALLS ===== -->
+
+    <!-- North wall (top) -->
+    <model name="wall_north">
+      <static>true</static><pose>1 12 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>22 0.2 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>22 0.2 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse><specular>0.02 0.02 0.02 1</specular></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- South wall -->
+    <model name="wall_south">
+      <static>true</static><pose>1 -6 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>22 0.2 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>22 0.2 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse><specular>0.02 0.02 0.02 1</specular></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- West wall -->
+    <model name="wall_west">
+      <static>true</static><pose>-10 3 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 18 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 18 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse><specular>0.02 0.02 0.02 1</specular></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- East wall -->
+    <model name="wall_east">
+      <static>true</static><pose>12 3 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 18 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 18 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse><specular>0.02 0.02 0.02 1</specular></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== MAIN CORRIDOR WALLS (East-West, y=0 center, width=3m) ===== -->
+
+    <!-- Corridor north wall segment east -->
+    <model name="corridor_north_east">
+      <static>true</static><pose>6 3 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>12 0.2 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>12 0.2 3</size></box></geometry>
+          <material><ambient>0.90 0.90 0.92 1</ambient><diffuse>0.90 0.90 0.92 1</diffuse><specular>0.02 0.02 0.02 1</specular></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== RECEPTION AREA (x=-10 to -7, y=3 to 12) ===== -->
+
+    <!-- Supply table -->
+    <model name="supply_table">
+      <static>true</static><pose>-8.5 8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>2.5 0.6 1.0</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>2.5 0.6 1.0</size></box></geometry>
+          <material><ambient>0.6 0.5 0.3 1</ambient><diffuse>0.6 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Supply side panel -->
+    <model name="supply_side">
+      <static>true</static><pose>-7.4 7.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 2.0 1.0</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 2.0 1.0</size></box></geometry>
+          <material><ambient>0.6 0.5 0.3 1</ambient><diffuse>0.6 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Reception computer monitor -->
+    <model name="reception_monitor">
+      <static>true</static><pose>-8.5 7.7 1.1 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.05 0.3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.05 0.3</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Waiting chairs (3 chairs) -->
+    <!-- Supply boxes near reception (3 boxes) -->
+    <model name="supply_box_1">
+      <static>true</static><pose>-9.0 10.5 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.5 0.4</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.5 0.4</size></box></geometry>
+          <material><ambient>0.72 0.55 0.3 1</ambient><diffuse>0.72 0.55 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="supply_box_2">
+      <static>true</static><pose>-8.3 10.5 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.5 0.4</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.5 0.4</size></box></geometry>
+          <material><ambient>0.72 0.55 0.3 1</ambient><diffuse>0.72 0.55 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="supply_box_3">
+      <static>true</static><pose>-7.6 10.5 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.5 0.4</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.5 0.4</size></box></geometry>
+          <material><ambient>0.72 0.55 0.3 1</ambient><diffuse>0.72 0.55 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== PATIENT ROOM 1 (x=-3 to 3, y=3 to 12) ===== -->
+    <!-- Room 1 west wall -->
+    <model name="room1_west">
+      <static>true</static><pose>-3 7.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 9 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 9 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Room 1 east wall (with door gap) -->
+    <model name="room1_east_top">
+      <static>true</static><pose>3 9.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 5 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.2 5 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Patient Room 1 Bed -->
+    <model name="bed_room1">
+      <static>true</static><pose>-1 10 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.95 2.1 0.7</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.95 2.1 0.7</size></box></geometry>
+          <material><ambient>1.0 1.0 1.0 1</ambient><diffuse>1.0 1.0 1.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bed pillow -->
+    <model name="pillow_room1">
+      <static>true</static><pose>-1 11.0 0.75 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 0.4 0.1</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 0.4 0.1</size></box></geometry>
+          <material><ambient>0.95 0.95 1.0 1</ambient><diffuse>0.95 0.95 1.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bedside table room 1 -->
+    <model name="bedside_table_1">
+      <static>true</static><pose>0.3 10 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.8</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.4 0.8</size></box></geometry>
+          <material><ambient>0.7 0.6 0.4 1</ambient><diffuse>0.7 0.6 0.4 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- IV Stand room 1 -->
+    <model name="iv_stand_1">
+      <static>true</static><pose>-2.0 10.5 0.9 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.03</radius><length>1.8</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.03</radius><length>1.8</length></cylinder></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- IV Bag -->
+    <model name="iv_bag_1">
+      <static>true</static><pose>-2.0 10.5 1.85 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.15 0.05 0.25</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.15 0.05 0.25</size></box></geometry>
+          <material><ambient>0.7 0.9 0.7 0.8</ambient><diffuse>0.7 0.9 0.7 0.8</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Privacy curtain rail room 1 -->
+    <model name="curtain_rail_1">
+      <static>true</static><pose>-1 9.0 2.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.02</radius><length>3.0</length></cylinder></geometry>
+          <pose>0 0 0 0 1.5708 0</pose>
+        </collision>
+        <visual name="vis">
+          <geometry>
+            <cylinder>
+              <radius>0.02</radius>
+              <length>3.0</length>
+            </cylinder>
+          </geometry>
+          <pose>0 0 0 0 1.5708 0</pose>
+          <material>
+            <ambient>0.7 0.7 0.7 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== PATIENT ROOM 2 (x=3 to 9, y=3 to 12) ===== -->
+
+    <!-- Patient Room 2 Bed -->
+    <model name="bed_room2">
+      <static>true</static><pose>6 10 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.95 2.1 0.7</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.95 2.1 0.7</size></box></geometry>
+          <material><ambient>1.0 1.0 1.0 1</ambient><diffuse>1.0 1.0 1.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bed pillow room 2 -->
+    <model name="pillow_room2">
+      <static>true</static><pose>6 11.0 0.75 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 0.4 0.1</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 0.4 0.1</size></box></geometry>
+          <material><ambient>0.95 0.95 1.0 1</ambient><diffuse>0.95 0.95 1.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bedside table room 2 -->
+    <model name="bedside_table_2">
+      <static>true</static><pose>7.2 10 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.8</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.4 0.8</size></box></geometry>
+          <material><ambient>0.7 0.6 0.4 1</ambient><diffuse>0.7 0.6 0.4 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- IV Stand room 2 -->
+    <model name="iv_stand_2">
+      <static>true</static><pose>5.0 10.5 0.9 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.03</radius><length>1.8</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.03</radius><length>1.8</length></cylinder></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== NURSES STATION (center, x=-1 to 3, y=-1 to 3) ===== -->
+    <model name="nurses_desk_main">
+      <static>true</static><pose>1 1.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3.5 0.6 1.0</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3.5 0.6 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.28 1</ambient><diffuse>0.55 0.45 0.28 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Nurses monitor 1 -->
+    <model name="nurses_monitor_1">
+      <static>true</static><pose>0.0 0.7 1.1 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.35 0.05 0.28</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.35 0.05 0.28</size></box></geometry>
+          <material><ambient>0.08 0.08 0.08 1</ambient><diffuse>0.08 0.08 0.08 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Nurses monitor 2 -->
+    <model name="nurses_monitor_2">
+      <static>true</static><pose>1.5 0.7 1.1 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.35 0.05 0.28</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.35 0.05 0.28</size></box></geometry>
+          <material><ambient>0.08 0.08 0.08 1</ambient><diffuse>0.08 0.08 0.08 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Nurses filing cabinet -->
+    <model name="filing_cabinet">
+      <static>true</static><pose>-0.5 -0.5 0.6 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.4 1.2</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.4 1.2</size></box></geometry>
+          <material><ambient>0.6 0.6 0.65 1</ambient><diffuse>0.6 0.6 0.65 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== OPERATING THEATER (x=9 to 12, y=-6 to 3) ===== -->
+    <model name="ot_north_wall">
+      <static>true</static><pose>10.5 3 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>3 0.2 3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>3 0.2 3</size></box></geometry>
+          <material><ambient>0.92 0.92 0.92 1</ambient><diffuse>0.92 0.92 0.92 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== STORAGE / CHARGING BAY (x=-10 to -4, y=-6 to -3) ===== -->
+
+    <!-- Charging dock marker (flat box on floor) -->
+    <model name="charging_dock">
+      <static>true</static><pose>-8.5 -4.5 0.02 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.8 0.8 0.04</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.8 0.8 0.04</size></box></geometry>
+          <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Storage shelf 1 -->
+    <model name="shelf_1">
+      <static>true</static><pose>-6.5 -5.0 0.8 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>2.0 0.4 1.6</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>2.0 0.4 1.6</size></box></geometry>
+          <material><ambient>0.65 0.5 0.3 1</ambient><diffuse>0.65 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Storage shelf 2 -->
+    <model name="shelf_2">
+      <static>true</static><pose>-4.5 -5.0 0.8 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>2.0 0.4 1.6</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>2.0 0.4 1.6</size></box></geometry>
+          <material><ambient>0.65 0.5 0.3 1</ambient><diffuse>0.65 0.5 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== HALLWAY OBSTACLES (clutter) ===== -->
+
+    <!-- Laundry cart -->
+    <model name="laundry_cart">
+      <static>true</static><pose>-5 0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 0.9 0.8</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 0.9 0.8</size></box></geometry>
+          <material><ambient>0.7 0.7 0.8 1</ambient><diffuse>0.7 0.7 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Food trolley -->
+    <model name="food_trolley">
+      <static>true</static><pose>2 -1.5 0.45 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.7 0.9</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.7 0.9</size></box></geometry>
+          <material><ambient>0.85 0.75 0.2 1</ambient><diffuse>0.85 0.75 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Wet floor sign -->
+    <model name="wet_floor_sign">
+      <static>true</static><pose>5 -0.5 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.08 0.3 0.7</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.08 0.3 0.7</size></box></geometry>
+          <material><ambient>0.9 0.8 0.0 1</ambient><diffuse>0.9 0.8 0.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Extra laundry bag on floor -->
+    <model name="laundry_bag">
+      <static>true</static><pose>8 1.5 0.15 0 0 0.4</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.4 0.3</size></box></geometry>
+          <material><ambient>0.6 0.6 0.7 1</ambient><diffuse>0.6 0.6 0.7 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Medicine box on floor -->
+    <!-- <model name="medicine_box">
+      <static>true</static><pose>-2 1.5 0.15 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.3 0.3 0.3</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.3 0.3 0.3</size></box></geometry>
+          <material><ambient>1.0 0.3 0.3 1</ambient><diffuse>1.0 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model> -->
+
+    <!-- Wheelchair parked -->
+    <model name="wheelchair">
+      <static>true</static><pose>-8 3.5 0.45 0 0 0.3</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 0.9 0.9</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 0.9 0.9</size></box></geometry>
+          <material><ambient>0.4 0.4 0.4 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== SIGNAGE (at 1.5m height) ===== -->
+
+    <!-- Room 1 sign -->
+    <model name="sign_room1">
+      <static>true</static><pose>0 3.05 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.02 0.15</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.02 0.15</size></box></geometry>
+          <material><ambient>0.1 0.4 0.8 1</ambient><diffuse>0.1 0.4 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Room 2 sign -->
+    <model name="sign_room2">
+      <static>true</static><pose>6 3.05 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.02 0.15</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.4 0.02 0.15</size></box></geometry>
+          <material><ambient>0.1 0.4 0.8 1</ambient><diffuse>0.1 0.4 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Charging bay sign -->
+    <model name="sign_charging">
+      <static>true</static><pose>-7 -3.05 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.5 0.02 0.15</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.02 0.15</size></box></geometry>
+          <material><ambient>0.1 0.7 0.1 1</ambient><diffuse>0.1 0.7 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== PEOPLE (static obstacles) =====
+         Originally three <actor> blocks whose skin/animation meshes were
+         Ignition Fuel URLs. Under Gazebo Classic those URLs download an
+         invalid COLLADA file, and Classic's ColladaLoader then segfaults
+         the server ("Missing COLLADA tag" -> core dump).
+
+         The original block was also malformed: XML comments cannot nest,
+         so the "<!-- Actor 3" comment on the old line 592 silently closed
+         the comment opened at the old line 566. Only roamer_1 was actually
+         disabled; the receptionist and patient were live despite appearing
+         commented out, and a stray "-->" dangled at the end of the block.
+
+         Both live actors are reproduced below as static cylinder models
+         with the same poses and the same 0.3 m x 1.8 m collision geometry
+         they already declared, so they remain physical obstacles for
+         navigation and stuck-recovery testing with no mesh dependency.
+         roamer_1 stays disabled, as originally intended. -->
+
+    <model name="person_reception">
+      <static>true</static>
+      <pose>1.0 1.8 0.9 0 0 3.14</pose>
+      <link name="body">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.3</radius><length>1.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.3</radius><length>1.8</length></cylinder></geometry>
+          <material>
+            <ambient>0.2 0.35 0.55 1</ambient>
+            <diffuse>0.2 0.35 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="person_patient">
+      <static>true</static>
+      <pose>1.5 -1.0 0.9 0 0 0</pose>
+      <link name="body">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.3</radius><length>1.8</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.3</radius><length>1.8</length></cylinder></geometry>
+          <material>
+            <ambient>0.55 0.3 0.3 1</ambient>
+            <diffuse>0.55 0.3 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
